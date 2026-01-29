@@ -3,90 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>돈키호테 계산기</title>
+    <title>돈키호테 계산기 🐧</title>
     <style>
-        :root { --primary-color: #ffdb00; --dark-color: #333; }
-        body { font-family: -apple-system, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; padding-bottom: 140px; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        h2 { color: var(--dark-color); margin-top: 0; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: var(--primary-color); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .item-list { list-style: none; padding: 0; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
-        .total-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-color); color: white; padding: 20px; border-radius: 20px 20px 0 0; z-index: 100; }
-        .total-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
-        .tax-info { font-size: 12px; color: #ccc; }
-        .free-shipping { color: #ffdb00; font-weight: bold; font-size: 14px; text-align: center; margin-top: 8px; }
+        :root { --primary: #ffdb00; --bg: #f4f4f4; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; padding-bottom: 140px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin: 0 0 15px 0; text-align: center; color: #333; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .item-list { list-style: none; padding: 0; margin: 0; }
+        .item-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .total-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: white; padding: 20px; border-radius: 25px 25px 0 0; text-align: center; transition: 0.3s; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .tax-label { font-size: 12px; color: #bbb; }
+        .price-val { font-size: 18px; font-weight: bold; }
+        .msg { font-size: 14px; font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>🐧 돈키호테 계산기</h2>
-        <input type="text" id="pName" placeholder="상품명">
-        <input type="number" id="pPrice" placeholder="세전 가격 (엔)" inputmode="numeric">
-        <input type="number" id="pQty" value="1" placeholder="개수" inputmode="numeric">
-        <button onclick="addItem()">리스트에 담기</button>
+<div class="card">
+    <h2>🛍️ 돈키호테 계산기</h2>
+    <input type="text" id="name" placeholder="상품명">
+    <input type="number" id="price" placeholder="세전 가격(엔)" inputmode="numeric">
+    <input type="number" id="qty" value="1" placeholder="개수" inputmode="numeric">
+    <button onclick="add()">담기</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0">🛒 장바구니</h3>
+    <ul id="list" class="item-list"></ul>
+    <button style="background:#eee; color:#666; margin-top:15px; padding:8px" onclick="reset()">초기화</button>
+</div>
+
+<div class="total-bar" id="bar">
+    <div class="grid">
+        <div><div class="tax-label">세전 합계</div><div id="pPre" class="price-val">0 ¥</div></div>
+        <div><div class="tax-label">세후 합계</div><div id="pPost" class="price-val" style="color:#ffdb00">0 ¥</div></div>
     </div>
+    <div id="msg" class="msg">5,000엔 이상 면세 가능!</div>
+</div>
 
-    <div class="card">
-        <h3>🛒 장바구니</h3>
-        <ul id="itemList" class="item-list"></ul>
-        <button style="background: #eee; color: #666; font-size: 12px;" onclick="clearCart()">전체 비우기</button>
-    </div>
+<script>
+    let cart = [];
+    function add() {
+        const p = document.getElementById('price').value;
+        if(!p) return alert("가격을 입력하세요!");
+        cart.push({ name: document.getElementById('name').value || '상품', price: Number(p), qty: Number(document.getElementById('qty').value) });
+        update();
+        document.getElementById('name').value = ''; document.getElementById('price').value = '';
+    }
+    function reset() { if(confirm("삭제할까요?")) { cart = []; update(); } }
+    function update() {
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        let total = 0;
+        cart.forEach(item => {
+            total += (item.price * item.qty);
+            const li = document.createElement('li');
+            li.className = 'item-row';
+            li.innerHTML = `<div><b>${item.name}</b><br><small>${item.price}¥ x ${item.qty}</small></div><div>${(item.price*item.qty).toLocaleString()}¥</div>`;
+            list.appendChild(li);
+        });
+        const isFree = total >= 5000;
+        document.getElementById('pPre').innerText = total.toLocaleString() + ' ¥';
+        document.getElementById('pPost').innerText = (isFree ? total : Math.floor(total * 1.1)).toLocaleString() + ' ¥';
+        document.getElementById('msg').innerText = isFree ? "🎉 면세 대상입니다!" : "5,000엔 이상 면세 가능!";
+        document.getElementById('bar').style.background = isFree ? "#1b5e20" : "#333";
+    }
+</script>
 
-    <div class="total-bar" id="bottomBar">
-        <div class="total-grid">
-            <div>
-                <div class="tax-info">세전 합계</div>
-                <div id="totalPre" style="font-size: 20px; font-weight: bold;">0 ¥</div>
-            </div>
-            <div>
-                <div class="tax-info">세후 합계 (10%)</div>
-                <div id="totalPost" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0 ¥</div>
-            </div>
-        </div>
-        <div id="taxFreeMsg" class="free-shipping">5,000엔 이상 구매 시 면세 가능!</div>
-    </div>
-
-    <script>
-        let cart = [];
-
-        function addItem() {
-            const name = document.getElementById('pName').value || "상품";
-            const price = parseFloat(document.getElementById('pPrice').value);
-            const qty = parseInt(document.getElementById('pQty').value);
-
-            if (!price) return alert("가격을 입력하세요!");
-
-            cart.push({ name, price, qty });
-            render();
-            document.getElementById('pName').value = "";
-            document.getElementById('pPrice').value = "";
-        }
-
-        function clearCart() { if(confirm("전체 삭제할까요?")) { cart = []; render(); } }
-
-        function render() {
-            const list = document.getElementById('itemList');
-            list.innerHTML = "";
-            let pre = 0, totalQ = 0;
-
-            cart.forEach((item) => {
-                pre += (item.price * item.qty);
-                totalQ += item.qty;
-                const li = document.createElement('li');
-                li.className = 'item-row';
-                li.innerHTML = `<div><strong>${item.name}</strong><br><small>${item.price}¥ x ${item.qty}</small></div><div>${(item.price*item.qty).toLocaleString()}¥</div>`;
-                list.appendChild(li);
-            });
-
-            const isTaxFree = pre >= 5000;
-            document.getElementById('totalPre').innerText = pre.toLocaleString() + " ¥";
-            document.getElementById('totalPost').innerText = (isTaxFree ? pre : Math.floor(pre * 1.1)).toLocaleString() + " ¥";
-            document.getElementById('taxFreeMsg').innerText = isTaxFree ? "✅ 면세 적용 대상입니다!" : "5,000엔 이상 구매 시 면세 가능!";
-            document.getElementById('bottomBar').style.background = isTaxFree ? "#006400" : "#333";
-        }
-    </script>
 </body>
 </html>
