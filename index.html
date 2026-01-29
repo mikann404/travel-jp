@@ -27,7 +27,7 @@
         .card h3 { color: var(--choco-brown); margin-top: 0; border-left: 5px solid var(--choco-brown); padding-left: 10px; font-size: 14px; margin-bottom: 15px; }
 
         .type-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .type-btn { flex: 1; padding: 12px; border: 2px solid var(--banana-yellow); border-radius: 12px; background: white; cursor: pointer; font-weight: bold; color: #999; transition: 0.2s; font-size: 14px; }
+        .type-btn { flex: 1; padding: 12px; border: 2px solid var(--banana-yellow); border-radius: 12px; background: white; cursor: pointer; font-weight: bold; color: #999; transition: 0.2s; font-size: 14px; text-align: center;}
         .type-btn.active { background: var(--accent-yellow); color: var(--choco-brown); border-color: var(--accent-yellow); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
         input { width: 100%; padding: 14px; margin: 6px 0; border: 2px solid var(--banana-yellow); border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s; }
@@ -102,11 +102,14 @@
             currentType = type;
             document.getElementById('btnConsumable').classList.toggle('active', type === '소모품');
             document.getElementById('btnGeneral').classList.toggle('active', type === '일반');
-            // 버튼 클릭 시 입력값이 하나만 있다면 즉시 계산 업데이트
-            const pre = document.getElementById('prePrice').value;
-            const post = document.getElementById('postPrice').value;
-            if(pre && !post) handleInput('pre');
-            else if(!pre && post) handleInput('post');
+            
+            // 타입 변경 시, 입력된 값이 하나만 있다면 즉시 재계산
+            const preVal = document.getElementById('prePrice').value;
+            const postVal = document.getElementById('postPrice').value;
+            
+            if (preVal && !postVal) handleInput('pre');
+            else if (!preVal && postVal) handleInput('post');
+            else if (preVal && postVal) handleInput('pre'); // 둘 다 있을 땐 세전 기준 재계산
         }
 
         function handleInput(mode) {
@@ -114,35 +117,47 @@
             const postEl = document.getElementById('postPrice');
             const selector = document.getElementById('typeSelectorArea');
 
-            // 둘 다 입력된 경우: 자동 판별 모드 (선택창 반투명 처리로 알림)
-            if (preEl.value && postEl.value) {
+            // 1. 둘 다 값이 명시적으로 입력된 경우: 자동 판별 모드 활성화 (UI 흐리게)
+            if (preEl.value !== "" && postEl.value !== "" && mode === 'manual') {
                 selector.style.opacity = "0.3";
                 selector.style.pointerEvents = "none";
-            } else {
-                selector.style.opacity = "1";
-                selector.style.pointerEvents = "auto";
-                
-                // 하나만 입력된 경우: 현재 선택된 타입으로 계산
-                const rate = currentType === '소모품' ? 0.08 : 0.10;
-                if (mode === 'pre' && preEl.value) {
-                    postEl.value = Math.floor(Number(preEl.value) * (1 + rate));
-                } else if (mode === 'post' && postEl.value) {
-                    preEl.value = Math.round(Number(postEl.value) / (1 + rate));
-                }
+                return;
+            }
+
+            // 2. 하나만 입력 중이거나 타입 버튼을 눌러 계산하는 경우
+            selector.style.opacity = "1";
+            selector.style.pointerEvents = "auto";
+            
+            const rate = currentType === '소모품' ? 0.08 : 0.10;
+            
+            if (mode === 'pre' && preEl.value !== "") {
+                // 세후 = 세전 * 1.08 (소수점 버림)
+                postEl.value = Math.floor(Number(preEl.value) * (1 + rate));
+            } else if (mode === 'post' && postEl.value !== "") {
+                // 세전 = 세후 / 1.08 (소수점 올림 - 일본 드럭스토어 역산 기준)
+                preEl.value = Math.ceil(Number(postEl.value) / (1 + rate));
             }
         }
 
+        // 수동 입력 감지를 위해 이벤트 리스너 추가 (둘 다 입력 여부 체크용)
+        document.getElementById('prePrice').addEventListener('blur', () => handleInput('manual'));
+        document.getElementById('postPrice').addEventListener('blur', () => handleInput('manual'));
+
         async function addItem() {
+            const preVal = document.getElementById('prePrice').value;
+            const postVal = document.getElementById('postPrice').value;
             const name = document.getElementById('name').value || "상품";
-            const pre = Number(document.getElementById('prePrice').value);
-            const post = Number(document.getElementById('postPrice').value);
             const qty = Number(document.getElementById('qty').value);
 
-            if (!pre || !post) return alert("가격을 입력해주세요!");
+            if (!preVal || !postVal) return alert("가격을 입력해주세요!");
 
-            // 최종 결정 타입
+            const pre = Number(preVal);
+            const post = Number(postVal);
+
+            // 최종 타입 결정: 둘 다 수동 입력했다면 세율 계산으로 판별
             let finalType = currentType;
-            if (document.getElementById('prePrice').value && document.getElementById('postPrice').value) {
+            const selector = document.getElementById('typeSelectorArea');
+            if (selector.style.opacity === "0.3") {
                 const calculatedRate = (post - pre) / pre;
                 finalType = calculatedRate > 0.09 ? "일반" : "소모품";
             }
@@ -157,8 +172,8 @@
             document.getElementById('name').value = '';
             document.getElementById('prePrice').value = '';
             document.getElementById('postPrice').value = '';
-            document.getElementById('typeSelectorArea').style.opacity = "1";
-            document.getElementById('typeSelectorArea').style.pointerEvents = "auto";
+            selector.style.opacity = "1";
+            selector.style.pointerEvents = "auto";
         }
 
         function changeQty(index, delta) {
