@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>돈키호테 쇼핑 계산기</title>
+    <style>
+        :root { --primary-color: #ffdb00; --dark-color: #333; }
+        body { font-family: -apple-system, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; padding-bottom: 120px; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h2 { color: var(--dark-color); margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: var(--primary-color); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .item-list { list-style: none; padding: 0; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
+        .total-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-color); color: white; padding: 20px; border-radius: 20px 20px 0 0; }
+        .total-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .tax-info { font-size: 12px; color: #ccc; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🛍️ 상품 추가</h2>
+        <input type="text" id="pName" placeholder="상품명 (예: 퍼펙트휩)">
+        <input type="number" id="pPrice" placeholder="세전 가격 (엔)" inputmode="numeric">
+        <input type="number" id="pQty" value="1" placeholder="개수" inputmode="numeric">
+        <button onclick="addItem()">리스트에 담기</button>
+    </div>
+
+    <div class="card">
+        <h3>🛒 장바구니</h3>
+        <ul id="itemList" class="item-list">
+            </ul>
+    </div>
+
+    <div class="total-bar">
+        <div class="total-grid">
+            <div>
+                <div class="tax-info">세전 합계</div>
+                <div id="totalBeforeTax" style="font-size: 20px; font-weight: bold;">0 ¥</div>
+            </div>
+            <div>
+                <div class="tax-info">세후 합계 (10%)</div>
+                <div id="totalAfterTax" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0 ¥</div>
+            </div>
+        </div>
+        <div id="itemCount" style="text-align: center; margin-top: 10px; font-size: 14px;">총 0개 항목</div>
+    </div>
+
+    <script>
+        let cart = [];
+
+        function addItem() {
+            const name = document.getElementById('pName').value || "상품";
+            const price = parseFloat(document.getElementById('pPrice').value);
+            const qty = parseInt(document.getElementById('pQty').value);
+
+            if (!price || price <= 0) {
+                alert("가격을 입력해주세요!");
+                return;
+            }
+
+            const item = { name, price, qty };
+            cart.push(item);
+            updateUI();
+            
+            // 입력창 초기화
+            document.getElementById('pName').value = "";
+            document.getElementById('pPrice').value = "";
+            document.getElementById('pQty').value = "1";
+        }
+
+        function updateUI() {
+            const listEl = document.getElementById('itemList');
+            listEl.innerHTML = "";
+            
+            let totalPre = 0;
+            let totalQty = 0;
+
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.qty;
+                totalPre += subtotal;
+                totalQty += item.qty;
+
+                const li = document.createElement('li');
+                li.className = 'item-row';
+                li.innerHTML = `
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>${item.price}¥ x ${item.qty}개</small>
+                    </div>
+                    <div>${subtotal.toLocaleString()}¥</div>
+                `;
+                listEl.appendChild(li);
+            });
+
+            const totalPost = Math.floor(totalPre * 1.10); // 10% 세율 적용
+
+            document.getElementById('totalBeforeTax').innerText = `${totalPre.toLocaleString()} ¥`;
+            document.getElementById('totalAfterTax').innerText = `${totalPost.toLocaleString()} ¥`;
+            document.getElementById('itemCount').innerText = `총 ${totalQty}개 항목 담김 (5,000엔 이상 면세 가능)`;
+        }
+    </script>
+</body>
+</html>
