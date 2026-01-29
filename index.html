@@ -21,36 +21,73 @@
             color: #333; padding-bottom: 240px;
         }
 
-        .header { background: var(--banana-yellow); padding: 20px; border-radius: 25px; text-align: center; box-shadow: var(--soft-shadow); margin-bottom: 25px; position: relative; }
+        /* 공통 카드 스타일 */
+        .card, .header, .modal-content {
+            background: #fffdf0; border-radius: 20px; box-shadow: var(--soft-shadow);
+        }
+
+        .header { background: var(--banana-yellow); padding: 20px; text-align: center; margin-bottom: 25px; position: relative; }
         .settings-btn { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 20px; }
-        .card { background: #fffdf0; padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: var(--soft-shadow); }
-        .card h3 { color: var(--choco-brown); margin-top: 0; border-left: 5px solid var(--choco-brown); padding-left: 10px; font-size: 14px; margin-bottom: 15px; }
+        
+        .card { padding: 20px; margin-bottom: 20px; }
+        .card h3 { color: var(--choco-brown); margin: 0 0 15px 0; border-left: 5px solid var(--choco-brown); padding-left: 10px; font-size: 14px; }
 
         input { width: 100%; padding: 14px; margin: 6px 0; border: 2px solid var(--banana-yellow); border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s; }
         input:focus { outline: none; border-color: var(--choco-brown); }
         
-        button.add-btn { width: 100%; padding: 16px; background: var(--accent-yellow); border: none; border-radius: 40px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: var(--soft-shadow); margin-top: 15px; }
+        button { cursor: pointer; border: none; font-weight: bold; transition: transform 0.1s; }
+        button:active { transform: scale(0.98); }
 
+        .add-btn { width: 100%; padding: 16px; background: var(--accent-yellow); border-radius: 40px; font-size: 18px; box-shadow: var(--soft-shadow); margin-top: 15px; }
+
+        /* 커스텀 모달 스타일 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            width: 85%; max-width: 320px; padding: 25px; text-align: center;
+            border: 4px solid var(--banana-yellow);
+        }
+        .modal-title { color: var(--choco-brown); font-size: 18px; margin-bottom: 20px; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .modal-btn { padding: 15px; border-radius: 15px; font-size: 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .btn-consumable { background: #e8f5e9; color: #2e7d32; border: 2px solid #2e7d32; }
+        .btn-general { background: #e3f2fd; color: #1565c0; border: 2px solid #1565c0; }
+
+        /* 장바구니 리스트 */
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #ddd; }
         .qty-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-        .qty-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .qty-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #ddd; background: white; }
         
         .type-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
         .tag-consumable { background: #e8f5e9; color: #2e7d32; }
         .tag-general { background: #e3f2fd; color: #1565c0; }
 
+        /* 하단 바 */
         .total-bar {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-choco);
             color: white; padding: 18px 20px; border-radius: 30px 30px 0 0;
             box-shadow: 0 -8px 24px rgba(0,0,0,0.45); border-top: 5px solid var(--banana-yellow); z-index: 1000;
         }
-
         .sub-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 12px; color: #bbb; }
         .main-total { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 18px; }
-        .tax-free-banner { background: #fffde7; color: #333; margin-top: 12px; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; }
+        .tax-free-banner { background: #fffde7; color: #333; margin-top: 12px; padding: 10px; border-radius: 12px; font-size: 13px; text-align: center; }
     </style>
 </head>
 <body>
+
+    <div id="taxModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">🍌 세율을 선택해 주세요</div>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-consumable" onclick="selectTax(0.08, '소모품')">소모품 (8%)</button>
+                <button class="modal-btn btn-general" onclick="selectTax(0.10, '일반')">일반 물품 (10%)</button>
+                <button style="margin-top:10px; background:none; color:#999;" onclick="closeModal()">취소</button>
+            </div>
+        </div>
+    </div>
 
     <div class="header">
         <span class="settings-btn" onclick="openSettings()">⚙️</span>
@@ -70,7 +107,7 @@
     <div class="card">
         <h3>🛒 장바구니</h3>
         <div id="itemList"></div>
-        <button onclick="clearCart()" style="background:none; border:none; color:#999; margin-top:20px; cursor:pointer; width:100%; font-size:12px;">전체 비우기</button>
+        <button onclick="clearCart()" style="background:none; border:none; color:#999; margin-top:20px; width:100%; font-size:12px;">전체 비우기</button>
     </div>
 
     <div class="total-bar">
@@ -88,6 +125,7 @@
     <script>
         let cart = JSON.parse(localStorage.getItem('chocoCart')) || [];
         let sheetUrl = localStorage.getItem('sheetUrl') || "";
+        let pendingItem = null; // 팝업 대기 중인 임시 데이터
 
         function handleAddItem() {
             let pre = document.getElementById('prePrice').value;
@@ -97,41 +135,45 @@
 
             if (!pre && !post) return alert("가격을 입력해주세요!");
 
-            let finalPre, finalPost, finalType;
-
-            // 1. 세전/세후 모두 입력한 경우
+            // 1. 둘 다 입력한 경우 -> 바로 담기
             if (pre && post) {
-                finalPre = Number(pre);
-                finalPost = Number(post);
+                const finalPre = Number(pre);
+                const finalPost = Number(post);
                 const rate = (finalPost - finalPre) / finalPre;
-                finalType = rate > 0.09 ? "일반" : "소모품";
+                const finalType = rate > 0.09 ? "일반" : "소모품";
                 executeAdd(name, finalPre, finalPost, qty, finalType);
             } 
-            // 2. 하나만 입력한 경우 -> 팝업으로 세율 확인
+            // 2. 하나만 입력한 경우 -> 커스텀 모달 열기
             else {
-                const isConsumable = confirm("세율을 선택해 주세요.\n\n[확인] : 소모품 (8%)\n[취소] : 일반 물품 (10%)");
-                const rate = isConsumable ? 0.08 : 0.10;
-                finalType = isConsumable ? "소모품" : "일반";
-
-                if (pre) {
-                    finalPre = Number(pre);
-                    finalPost = Math.floor(finalPre * (1 + rate));
-                } else {
-                    finalPost = Number(post);
-                    finalPre = Math.ceil(finalPost / (1 + rate));
-                }
-                executeAdd(name, finalPre, finalPost, qty, finalType);
+                pendingItem = { name, pre: pre ? Number(pre) : null, post: post ? Number(post) : null, qty };
+                document.getElementById('taxModal').style.display = 'flex';
             }
+        }
+
+        function selectTax(rate, type) {
+            let finalPre, finalPost;
+            if (pendingItem.pre) {
+                finalPre = pendingItem.pre;
+                finalPost = Math.floor(finalPre * (1 + rate));
+            } else {
+                finalPost = pendingItem.post;
+                finalPre = Math.ceil(finalPost / (1 + rate));
+            }
+            executeAdd(pendingItem.name, finalPre, finalPost, pendingItem.qty, type);
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('taxModal').style.display = 'none';
+            pendingItem = null;
         }
 
         async function executeAdd(name, pre, post, qty, type) {
             const newItem = { name, pre, post, qty, type };
             cart.push(newItem);
-            
-            if(sheetUrl) { fetch(sheetUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newItem) }); }
-
+            if(sheetUrl) fetch(sheetUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newItem) });
             saveAndRender();
-            // 입력창 초기화
+            // 초기화
             document.getElementById('name').value = '';
             document.getElementById('prePrice').value = '';
             document.getElementById('postPrice').value = '';
@@ -184,9 +226,8 @@
             document.getElementById('sumGeneral').innerText = finalG.toLocaleString();
             document.getElementById('finalTotal').innerText = (finalC + finalG).toLocaleString() + " ¥";
             
-            if(isCFree && isGFree) document.getElementById('msg').innerText = "🎉 전 품목 면세 적용 완료!";
-            else if(isCFree || isGFree) document.getElementById('msg').innerText = "💡 일부 면세 적용 (5,000엔↑ 항목)";
-            else document.getElementById('msg').innerText = "카테고리별 5,000엔 이상 시 면세 가능";
+            const isAnyFree = isCFree || isGFree;
+            document.getElementById('msg').innerText = (isCFree && isGFree) ? "🎉 전 품목 면세 적용 완료!" : (isAnyFree ? "💡 일부 면세 적용 (5,000엔↑ 항목)" : "카테고리별 5,000엔 이상 시 면세 가능");
         }
 
         function remove(i) { cart.splice(i, 1); saveAndRender(); }
